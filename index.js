@@ -7,7 +7,9 @@
 
 const Alexa = require("ask-sdk");
 
-const DIALOG_DIRECTIVE_SUPPORT = true;
+const ENABLE_DIALOG_DIRECTIVE_SUPPORT = true;
+const ENABLE_INTENT_HISTORY_SUPPORT = true;
+const MAX_HISTORY_SIZE = 3; // remember only latest 3 intents 
 
 // Session Attributes 
 //   Alexa will track attributes for you, by default only during the lifespan of your session.
@@ -23,9 +25,6 @@ function getMemoryAttributes() {   const memoryAttributes = {
    return memoryAttributes;
 };
 
-const maxHistorySize = 20; // remember only latest 20 intents 
-
-
 // Intent Handlers =============================================
 
 const LaunchRequestHandler =  {
@@ -40,6 +39,7 @@ const LaunchRequestHandler =  {
 
         let say = 'LaunchRequest. ' + `Locale is ${sessionAttributes.locale}. `;;
 
+        // Dummy multimodal output for testing purposes
         if (supportsDisplay(handlerInput)) {
             const myImage1 = new Alexa.ImageHelper()
                .addImageInstance(DisplayImg1.url)
@@ -63,6 +63,7 @@ const LaunchRequestHandler =  {
                textContent: primaryText,
              });
         }
+
         return responseBuilder
             .speak(say)
             .reprompt('try again, ' + say)
@@ -83,10 +84,11 @@ const CancelIntentHandler =  {
 
         let say = 'AMAZON.CancelIntent. Bye! ';
 
-        let history = sessionAttributes['history'];
-        let previousIntent = getPreviousIntent(sessionAttributes);
-        if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-             say += 'Previous intent was ' + previousIntent + '. ';
+        if(ENABLE_INTENT_HISTORY_SUPPORT){
+            let previousIntent = getPreviousIntent(sessionAttributes);
+            if (previousIntent && !handlerInput.requestEnvelope.session.new) {
+                say += 'Previous intent was ' + previousIntent + '. ';
+            }
         }
 
         return responseBuilder
@@ -108,10 +110,11 @@ const StopIntentHandler =  {
 
         let say = 'AMAZON.StopIntent. Bye! ';
 
-        let history = sessionAttributes['history'];
-        let previousIntent = getPreviousIntent(sessionAttributes);
-        if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-             say += 'Previous intent was ' + previousIntent + '. ';
+        if(ENABLE_INTENT_HISTORY_SUPPORT){
+            let previousIntent = getPreviousIntent(sessionAttributes);
+            if (previousIntent && !handlerInput.requestEnvelope.session.new) {
+                say += 'Previous intent was ' + previousIntent + '. ';
+            }
         }
 
         return responseBuilder
@@ -133,10 +136,11 @@ const HelpIntentHandler =  {
 
         let say = 'AMAZON.HelpIntent. ';
 
-        let history = sessionAttributes['history'];
-        let previousIntent = getPreviousIntent(sessionAttributes);
-        if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-             say += 'Previous intent was ' + previousIntent + '. ';
+        if(ENABLE_INTENT_HISTORY_SUPPORT){
+            let previousIntent = getPreviousIntent(sessionAttributes);
+            if (previousIntent && !handlerInput.requestEnvelope.session.new) {
+                say += 'Previous intent was ' + previousIntent + '. ';
+            }
         }
 
         return responseBuilder
@@ -158,10 +162,11 @@ const NavigateHomeIntentHandler =  {
 
         let say = 'AMAZON.NavigateHomeIntent. ';
 
-        let history = sessionAttributes['history'];
-        let previousIntent = getPreviousIntent(sessionAttributes);
-        if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-             say += 'Previous intent was ' + previousIntent + '. ';
+        if(ENABLE_INTENT_HISTORY_SUPPORT){
+            let previousIntent = getPreviousIntent(sessionAttributes);
+            if (previousIntent && !handlerInput.requestEnvelope.session.new) {
+                say += 'Previous intent was ' + previousIntent + '. ';
+            }
         }
 
         return responseBuilder
@@ -186,10 +191,11 @@ const FallbackIntentHandler = {
 
         let say = 'AMAZON.FallbackIntent. ';
 
-        let history = sessionAttributes['history'];
-        let previousIntent = getPreviousIntent(sessionAttributes);
-        if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-             say += 'Previous intent was ' + previousIntent + '. ';
+        if(ENABLE_INTENT_HISTORY_SUPPORT){
+            let previousIntent = getPreviousIntent(sessionAttributes);
+            if (previousIntent && !handlerInput.requestEnvelope.session.new) {
+                say += 'Previous intent was ' + previousIntent + '. ';
+            }
         }
 
         return responseBuilder
@@ -210,7 +216,7 @@ const ReflectorIntentHandler = {
       let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
       const currentIntent = request.intent; 
 
-      if(DIALOG_DIRECTIVE_SUPPORT && request.dialogState && request.dialogState !== 'COMPLETED') { 
+      if(ENABLE_DIALOG_DIRECTIVE_SUPPORT && request.dialogState && request.dialogState !== 'COMPLETED') { 
         return handlerInput.responseBuilder
             .addDelegateDirective(currentIntent)
             .getResponse();
@@ -225,20 +231,26 @@ const ReflectorIntentHandler = {
           const name = item; 
           const value = slotValues[item].value || 'empty'; 
           const synonym = slotValues[item].synonym || 'empty'; 
-          say += `${name} is ${value} `;
-          if (synonym != value) {
-            say += `via synomym ${synonym}`;
+          if(slotValues[item].canFulfill == false){
+            say += `${name} is ${value} `;
+          } else {
+            say += `${name} resolved to ${value} `;
+            if (synonym != value) {
+                say += `via synomym ${synonym}`;
+            }
           }
           say += '. ';
         });
       }
 
-      let history = sessionAttributes['history'];
-      let previousIntent = getPreviousIntent(sessionAttributes);
-      if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-        say += 'Previous intent was ' + previousIntent + '. ';
+      if(ENABLE_INTENT_HISTORY_SUPPORT){
+        let previousIntent = getPreviousIntent(sessionAttributes);
+        if (previousIntent && !handlerInput.requestEnvelope.session.new) {
+            say += 'Previous intent was ' + previousIntent + '. ';
+        }
       }
 
+      // Dummy multimodal output for testing purposes
       if (supportsDisplay(handlerInput)) {
         const myImage1 = new Alexa.ImageHelper()
            .addImageInstance(DisplayImg1.url)
@@ -407,11 +419,11 @@ function timeDelta(t1, t2) {
     const dt2 = new Date(t2); 
     const timeSpanMS = dt2.getTime() - dt1.getTime(); 
     const span = { 
-        "milliseconds": Math.floor(timeSpanMS), 
-        "seconds": Math.floor(timeSpanMS / (1000 )), 
-        "minutes": Math.floor(timeSpanMS / (1000 * 60 )), 
-        //"hours": Math.floor(timeSpanMS / (1000 * 60 * 60)), 
-        //"days": Math.floor(timeSpanMS / (1000 * 60 * 60 * 24)) 
+        "milliseconds": timeSpanMS, 
+        "seconds": timeSpanMS / (1000 ), 
+        "minutes": timeSpanMS / (1000 * 60 ), 
+        //"hours": timeSpanMS / (1000 * 60 * 60), 
+        //"days": timeSpanMS / (1000 * 60 * 60 * 24) 
     }; 
     return span; 
 } 
@@ -457,7 +469,7 @@ const RequestHistoryInterceptor = {
         } else { 
             IntentRequest = {'IntentRequest' : thisRequest.type}; 
         } 
-        if(history.length > maxHistorySize - 1) { 
+        if(history.length > MAX_HISTORY_SIZE - 1) { 
             history.shift(); 
         } 
         history.push(IntentRequest); 
