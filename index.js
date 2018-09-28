@@ -16,12 +16,13 @@ const MAX_HISTORY_SIZE = 3; // remember only latest 3 intents
 //   The history[] array will track previous request(s), used for contextual Help/Yes/No handling.
 //   Set up DynamoDB persistence to have the skill save and reload these attributes between skill sessions.
 
-function getMemoryAttributes() {   const memoryAttributes = {
+function getMemoryAttributes() {  
+    const memoryAttributes = {
        "history": [],
        "launchCount": 0,
        "lastUseTimestamp": 0,
        "lastSpeechOutput": {}
-   };
+    };
    return memoryAttributes;
 };
 
@@ -37,7 +38,7 @@ const LaunchRequestHandler =  {
         const responseBuilder = handlerInput.responseBuilder;
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
 
-        let say = 'LaunchRequest. ' + `Locale is ${sessionAttributes.locale}. `;;
+        let say = 'LaunchRequest. ' + `Locale is ${sessionAttributes.locale}. `;
 
         // Dummy multimodal output for testing purposes
         if (supportsDisplay(handlerInput)) {
@@ -69,7 +70,7 @@ const LaunchRequestHandler =  {
             .reprompt('try again, ' + say)
             .withStandardCard('LaunchRequest', say, welcomeCardImg.smallImageUrl, welcomeCardImg.largeImageUrl)
             .getResponse();
-    },
+    }
 };
 
 const CancelIntentHandler =  {
@@ -202,8 +203,33 @@ const FallbackIntentHandler = {
             .speak(say)
             .reprompt('try again, ' + say)
             .getResponse();
+    }
+};
+
+const CatchAllIntentHandler = {
+    canHandle(handlerInput) {
+      return true;
     },
-  };
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'CatchAllIntent. ';
+
+        if(ENABLE_INTENT_HISTORY_SUPPORT){
+            let previousIntent = getPreviousIntent(sessionAttributes);
+            if (previousIntent && !handlerInput.requestEnvelope.session.new) {
+                say += 'Previous intent was ' + previousIntent + '. ';
+            }
+        }
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    }
+  }
 
 const ReflectorIntentHandler = {
     canHandle(handlerInput) {
@@ -232,9 +258,9 @@ const ReflectorIntentHandler = {
           const value = slotValues[item].value || 'empty'; 
           const synonym = slotValues[item].synonym || 'empty'; 
           if(slotValues[item].canFulfill == false){
-            say += `${name} is ${value} `;
+            say += `${name} is ${value}`;
           } else {
-            say += `${name} resolved to ${value} `;
+            say += `${name} resolved to ${value}`;
             if (synonym != value) {
                 say += `via synomym ${synonym}`;
             }
@@ -318,7 +344,7 @@ const RequestHandlerChainErrorHandler = {
       return handlerInput.responseBuilder
         .speak(`Oops! Looks like you forgot to register a handler.`)
         .getResponse();
-    },
+    }
   };
 
 // Helper Functions ===================================================================
@@ -373,8 +399,8 @@ function getSlotValues(filledSlots) {
     return slotValues;
 }
 
-function supportsDisplay(handlerInput) // returns true if the skill is running on a device with a display (Echo Show, Echo Spot, etc.) 
-{                                      //  Enable your skill for display as shown here: https://alexa.design/enabledisplay 
+function supportsDisplay(handlerInput){ // returns true if the skill is running on a device with a display (Echo Show, Echo Spot, etc.) 
+                                        //  Enable your skill for display as shown here: https://alexa.design/enabledisplay 
     const hasDisplay = 
         handlerInput.requestEnvelope.context && 
         handlerInput.requestEnvelope.context.System && 
@@ -420,15 +446,15 @@ function timeDelta(t1, t2) {
     const timeSpanMS = dt2.getTime() - dt1.getTime(); 
     const span = { 
         "milliseconds": timeSpanMS, 
-        "seconds": timeSpanMS / (1000 ), 
-        "minutes": timeSpanMS / (1000 * 60 ), 
+        "seconds": timeSpanMS / 1000 
+        //"minutes": timeSpanMS / (1000 * 60), 
         //"hours": timeSpanMS / (1000 * 60 * 60), 
         //"days": timeSpanMS / (1000 * 60 * 60 * 24) 
     }; 
     return span; 
 } 
  
-const InitMemoryAttributesInterceptor = { 
+const InitMemoryAttributesRequestInterceptor = { 
     process(handlerInput) { 
         let sessionAttributes = {}; 
         if(handlerInput.requestEnvelope.session['new']) { 
@@ -444,7 +470,7 @@ const InitMemoryAttributesInterceptor = {
     } 
 }; 
  
-const RequestHistoryInterceptor = { 
+const HistoryRequestInterceptor = { 
     process(handlerInput) { 
         const thisRequest = handlerInput.requestEnvelope.request; 
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
@@ -477,19 +503,19 @@ const RequestHistoryInterceptor = {
     } 
 };
 
-const ResponseRecordSpeechOutputInterceptor = { 
-    process(handlerInput, responseOutput) { 
+const RecordSpeechOutputResponseInterceptor = { 
+    process(handlerInput, response) {
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
         let lastSpeechOutput = { 
-            "outputSpeech":responseOutput.outputSpeech ? responseOutput.outputSpeech.ssml : null, 
-            "reprompt":responseOutput.reprompt ? responseOutput.reprompt.outputSpeech.ssml : null, 
+            "outputSpeech":response.outputSpeech ? response.outputSpeech.ssml : '<Output handled automatically via dialog delegation>', 
+            "reprompt":response.reprompt ? response.reprompt.outputSpeech.ssml : '<Output handled automatically via dialog delegation>', 
         }; 
         sessionAttributes['lastSpeechOutput'] = lastSpeechOutput; 
         handlerInput.attributesManager.setSessionAttributes(sessionAttributes); 
     } 
 }; 
  
-/*const RequestPersistenceInterceptor = { 
+/*const PersistenceRequestInterceptor = { 
     process(handlerInput) { 
         if(handlerInput.requestEnvelope.session['new']) { 
             return new Promise((resolve, reject) => { 
@@ -511,7 +537,7 @@ const ResponseRecordSpeechOutputInterceptor = {
     } 
 };
  
-const ResponsePersistenceInterceptor = { 
+const PersistenceResponseInterceptor = { 
     process(handlerInput, responseOutput) { 
         const ses = (typeof responseOutput.shouldEndSession == "undefined" ? true : responseOutput.shouldEndSession); 
         if(ses || handlerInput.requestEnvelope.request.type == 'SessionEndedRequest') { // skill was stopped or timed out 
@@ -531,16 +557,24 @@ const ResponsePersistenceInterceptor = {
     } 
 };*/
 
-const TimestampRequestInterceptor = {
+const TimestampResponseInterceptor = {
     process(handlerInput, responseOutput) { 
-        const ses = (typeof responseOutput.shouldEndSession == "undefined" ? true : responseOutput.shouldEndSession); 
-        if(ses || handlerInput.requestEnvelope.request.type == 'SessionEndedRequest') { // skill was stopped or timed out 
-            let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
-            //sessionAttributes['lastUseTimestamp'] = new Date(handlerInput.requestEnvelope.request.timestamp).getTime();
-            sessionAttributes['lastUseTimestamp'] = new Date().toISOString();
-            sessionAttributes['timeDelta'] = timeDelta(handlerInput.requestEnvelope.request.timestamp, sessionAttributes['lastUseTimestamp']);
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
+        sessionAttributes['requestTimestamp'] = new Date(handlerInput.requestEnvelope.request.timestamp).toISOString();
+        sessionAttributes['responseTimestamp'] = new Date().toISOString();
+        sessionAttributes['deltaTime'] = timeDelta(handlerInput.requestEnvelope.request.timestamp, sessionAttributes['responseTimestamp']);
+        handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
+    } 
+};
+
+const DialogStateResponseInterceptor = {
+    process(handlerInput, responseOutput) { 
+        const request = handlerInput.requestEnvelope.request;
+        if(request.dialogState) {
+            let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+            sessionAttributes['dialogState'] = request.dialogState;
             handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
-        } 
+        }
     } 
 };
 
@@ -577,21 +611,23 @@ exports.handler = skillBuilder
         CancelIntentHandler, 
         HelpIntentHandler, 
         StopIntentHandler, 
-        NavigateHomeIntentHandler, 
+        NavigateHomeIntentHandler,
+        FallbackIntentHandler, 
         ReflectorIntentHandler,
-        FallbackIntentHandler,
-        SessionEndedHandler
+        SessionEndedHandler,
+        CatchAllIntentHandler
     )
     .addErrorHandlers(GenericErrorHandler)
-    .addRequestInterceptors(InitMemoryAttributesInterceptor)
-    .addRequestInterceptors(RequestHistoryInterceptor)
+    .addRequestInterceptors(InitMemoryAttributesRequestInterceptor)
+    .addRequestInterceptors(HistoryRequestInterceptor)
     .addRequestInterceptors(LocaleRequestInterceptor)
     .addRequestInterceptors(LoggingRequestInterceptor)
     .addResponseInterceptors(LoggingResponseInterceptor)
-    .addResponseInterceptors(ResponseRecordSpeechOutputInterceptor)
-    .addResponseInterceptors(TimestampRequestInterceptor)
-    // .addRequestInterceptors(RequestPersistenceInterceptor)
-    // .addResponseInterceptors(ResponsePersistenceInterceptor)
+    .addResponseInterceptors(RecordSpeechOutputResponseInterceptor)
+    .addResponseInterceptors(TimestampResponseInterceptor)
+    .addResponseInterceptors(DialogStateResponseInterceptor)
+    // .addRequestInterceptors(PersistenceRequestInterceptor)
+    // .addResponseInterceptors(PersistenceResponseInterceptor)
     // .withTableName("reflectorTable")
     // .withAutoCreateTable(true)
     .lambda();
