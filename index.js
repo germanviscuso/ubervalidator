@@ -6,6 +6,17 @@
 // Paste this into your index.js file. 
 
 const Alexa = require("ask-sdk");
+const i18n = require('i18next');	
+const sprintf = require('i18next-sprintf-postprocessor');
+
+const languageStrings = {
+  'en' : require('./i18n/en'),
+  'en-GB' : require('./i18n/en-GB'),
+  'es' : require('./i18n/es'),
+  'es-MX' : require('./i18n/es-MX'),
+  'it' : require('./i18n/it'),
+  'fr' : require('./i18n/fr')
+}
 
 const ENABLE_DIALOG_DIRECTIVE_SUPPORT = true;
 const ENABLE_INTENT_HISTORY_SUPPORT = true;
@@ -37,8 +48,9 @@ const LaunchRequestHandler =  {
         const request = handlerInput.requestEnvelope.request;
         const responseBuilder = handlerInput.responseBuilder;
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
-        let say = 'LaunchRequest. ' + `Locale is ${sessionAttributes.locale}. `;
+        let say = requestAttributes.t('LAUNCH_REQUEST') + '. ' + requestAttributes.t('LOCALE_IS') + ` ${sessionAttributes.locale}. `;
 
         // Dummy multimodal output for testing purposes
         if (supportsDisplay(handlerInput)) {
@@ -60,15 +72,15 @@ const LaunchRequestHandler =  {
                backButton : 'HIDDEN',
                backgroundImage: myImage2,
                image: myImage1,
-               title: 'LaunchRequest',
+               title: requestAttributes.t('LAUNCH_REQUEST'),
                textContent: primaryText,
              });
         }
 
         return responseBuilder
             .speak(say)
-            .reprompt('try again, ' + say)
-            .withStandardCard('LaunchRequest', say, welcomeCardImg.smallImageUrl, welcomeCardImg.largeImageUrl)
+            .reprompt(requestAttributes.t('TRY_AGAIN') + ', ' + say)
+            .withStandardCard(requestAttributes.t('LAUNCH_REQUEST'), say, welcomeCardImg.smallImageUrl, welcomeCardImg.largeImageUrl)
             .getResponse();
     }
 };
@@ -82,13 +94,14 @@ const CancelIntentHandler =  {
         const request = handlerInput.requestEnvelope.request;
         const responseBuilder = handlerInput.responseBuilder;
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
-        let say = 'AMAZON.CancelIntent. Bye! ';
+        let say = requestAttributes.t('CANCEL_INTENT') + '. ' + requestAttributes.t('GOODBYE') + ' ';
 
         if(ENABLE_INTENT_HISTORY_SUPPORT){
             let previousIntent = getPreviousIntent(sessionAttributes);
             if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-                say += 'Previous intent was ' + previousIntent + '. ';
+                say += requestAttributes.t('PREVIOUS_INTENT_WAS') + ' ' + previousIntent + '. ';
             }
         }
 
@@ -108,13 +121,14 @@ const StopIntentHandler =  {
         const request = handlerInput.requestEnvelope.request;
         const responseBuilder = handlerInput.responseBuilder;
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
-        let say = 'AMAZON.StopIntent. Bye! ';
+        let say = requestAttributes.t('STOP_INTENT') + '. ' + requestAttributes.t('GOODBYE') + ' ';
 
         if(ENABLE_INTENT_HISTORY_SUPPORT){
             let previousIntent = getPreviousIntent(sessionAttributes);
             if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-                say += 'Previous intent was ' + previousIntent + '. ';
+                say += requestAttributes.t('PREVIOUS_INTENT_WAS') + ' ' + previousIntent + '. ';
             }
         }
 
@@ -134,19 +148,20 @@ const HelpIntentHandler =  {
         const request = handlerInput.requestEnvelope.request;
         const responseBuilder = handlerInput.responseBuilder;
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
-        let say = 'AMAZON.HelpIntent. ';
+        let say = requestAttributes.t('HELP_INTENT') + '. ';
 
         if(ENABLE_INTENT_HISTORY_SUPPORT){
             let previousIntent = getPreviousIntent(sessionAttributes);
             if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-                say += 'Previous intent was ' + previousIntent + '. ';
+                say += requestAttributes.t('PREVIOUS_INTENT_WAS') + ' ' + previousIntent + '. ';
             }
         }
 
         return responseBuilder
             .speak(say)
-            .reprompt('try again, ' + say)
+            .reprompt(requestAttributes.t('TRY_AGAIN') + ', ' + say)
             .getResponse();
     },
 };
@@ -160,19 +175,20 @@ const NavigateHomeIntentHandler =  {
         const request = handlerInput.requestEnvelope.request;
         const responseBuilder = handlerInput.responseBuilder;
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
-        let say = 'AMAZON.NavigateHomeIntent. ';
+        let say = requestAttributes.t('NAVIGATE_HOME_INTENT') + '. ';
 
         if(ENABLE_INTENT_HISTORY_SUPPORT){
             let previousIntent = getPreviousIntent(sessionAttributes);
             if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-                say += 'Previous intent was ' + previousIntent + '. ';
+                say += requestAttributes.t('PREVIOUS_INTENT_WAS') + ' ' + previousIntent + '. ';
             }
         }
 
         return responseBuilder
             .speak(say)
-            .reprompt('try again, ' + say)
+            .reprompt(requestAttributes.t('TRY_AGAIN') + ', ' + say)
             .getResponse();
     },
 };
@@ -189,19 +205,20 @@ const FallbackIntentHandler = {
         const request = handlerInput.requestEnvelope.request;
         const responseBuilder = handlerInput.responseBuilder;
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
-        let say = 'AMAZON.FallbackIntent. ';
+        let say = requestAttributes.t('FALLBACK_INTENT') + '. ';
 
         if(ENABLE_INTENT_HISTORY_SUPPORT){
             let previousIntent = getPreviousIntent(sessionAttributes);
             if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-                say += 'Previous intent was ' + previousIntent + '. ';
+                say += requestAttributes.t('PREVIOUS_INTENT_WAS') + ' ' + previousIntent + '. ';
             }
         }
 
         return responseBuilder
             .speak(say)
-            .reprompt('try again, ' + say)
+            .reprompt(requestAttributes.t('TRY_AGAIN') + ', ' + say)
             .getResponse();
     }
 };
@@ -214,19 +231,20 @@ const CatchAllIntentHandler = {
         const request = handlerInput.requestEnvelope.request;
         const responseBuilder = handlerInput.responseBuilder;
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
-        let say = 'CatchAllIntent. ';
+        let say = requestAttributes.t('CATCH_ALL_INTENT') + '. ';
 
         if(ENABLE_INTENT_HISTORY_SUPPORT){
             let previousIntent = getPreviousIntent(sessionAttributes);
             if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-                say += 'Previous intent was ' + previousIntent + '. ';
+                say += requestAttributes.t('PREVIOUS_INTENT_WAS') + ' ' + previousIntent + '. ';
             }
         }
 
         return responseBuilder
             .speak(say)
-            .reprompt('try again, ' + say)
+            .reprompt(requestAttributes.t('TRY_AGAIN') + ', ' + say)
             .getResponse();
     }
   }
@@ -240,6 +258,8 @@ const ReflectorIntentHandler = {
       const request = handlerInput.requestEnvelope.request;
       const responseBuilder = handlerInput.responseBuilder;
       let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+      const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
+
       const currentIntent = request.intent; 
 
       if(ENABLE_DIALOG_DIRECTIVE_SUPPORT && request.dialogState && request.dialogState !== 'COMPLETED') { 
@@ -252,17 +272,17 @@ const ReflectorIntentHandler = {
       const slotsInRequest = handlerInput.requestEnvelope.request.intent.slots;
       if (slotsInRequest) {
         const slotValues = getSlotValues(slotsInRequest);
-        say += `Slots, `;
+        say += requestAttributes.t('SLOTS') + ', ';
         Object.keys(slotValues).forEach((item) => {
           const name = item; 
-          const value = slotValues[item].value || 'empty'; 
-          const synonym = slotValues[item].synonym || 'empty'; 
+          const value = slotValues[item].value || requestAttributes.t('EMPTY'); 
+          const synonym = slotValues[item].synonym || requestAttributes.t('EMPTY'); 
           if(slotValues[item].canFulfill == false){
-            say += `${name} is ${value}`;
+            say += `${name} ` + requestAttributes.t('IS') + ` ${value}`;
           } else {
-            say += `${name} resolved to ${value}`;
+            say += `${name} ` + requestAttributes.t('RESOLVED_TO') + ` ${value}`;
             if (synonym != value) {
-                say += `via synomym ${synonym}`;
+                say += ' ' + requestAttributes.t('VIA_SYNONYM') + ` ${synonym}`;
             }
           }
           say += '. ';
@@ -272,7 +292,7 @@ const ReflectorIntentHandler = {
       if(ENABLE_INTENT_HISTORY_SUPPORT){
         let previousIntent = getPreviousIntent(sessionAttributes);
         if (previousIntent && !handlerInput.requestEnvelope.session.new) {
-            say += 'Previous intent was ' + previousIntent + '. ';
+            say += requestAttributes.t('PREVIOUS_INTENT_WAS') + ' ' + previousIntent + '. ';
         }
       }
 
@@ -296,14 +316,14 @@ const ReflectorIntentHandler = {
            backButton : 'HIDDEN',
            backgroundImage: myImage2,
            image: myImage1,
-           title: 'LaunchRequest',
+           title: `${currentIntent.name}`,
            textContent: primaryText,
          });
       }
 
       return responseBuilder
         .speak(say)
-        .reprompt('try again, ' + say)
+        .reprompt(requestAttributes.t('TRY_AGAIN') + ', ' + say)
         .withStandardCard(currentIntent.name, say, welcomeCardImg.smallImageUrl, welcomeCardImg.largeImageUrl)
         .getResponse();
     }
@@ -326,11 +346,12 @@ const GenericErrorHandler =  {
     },
     handle(handlerInput, error) {
         const request = handlerInput.requestEnvelope.request;
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
         console.log(`Error handled: ${error.message}`);
         // console.log(`Original Request was: ${JSON.stringify(request, null, 2)}`);
         return handlerInput.responseBuilder
-            .speak(`Sorry, your skill got this error.  ${error.message} `)
-            .reprompt(`Sorry, your skill got this error.  ${error.message} `)
+            .speak(requestAttributes.t('SORRY_SKILL_GOT_THIS_ERROR') + `.  ${error.message} `)
+            .reprompt(requestAttributes.t('SORRY_SKILL_GOT_THIS_ERROR') + `.  ${error.message} `)
             .getResponse();
     }
 };
@@ -340,9 +361,10 @@ const RequestHandlerChainErrorHandler = {
       return error.message === `RequestHandlerChain not found!`;
     },
     handle(handlerInput, error) {
+      const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
       console.log(`Error handled: ${error.message}`);
       return handlerInput.responseBuilder
-        .speak(`Oops! Looks like you forgot to register a handler.`)
+        .speak(requestAttributes.t('FORGOT_REGISTER_HANDLER'))
         .getResponse();
     }
   };
@@ -474,6 +496,7 @@ const HistoryRequestInterceptor = {
     process(handlerInput) { 
         const thisRequest = handlerInput.requestEnvelope.request; 
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
         let history = sessionAttributes['history'] || []; 
         let IntentRequest = {}; 
         if (thisRequest.type === 'IntentRequest' ) { 
@@ -505,7 +528,8 @@ const HistoryRequestInterceptor = {
 
 const RecordSpeechOutputResponseInterceptor = { 
     process(handlerInput, response) {
-        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+        const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
         let lastSpeechOutput = { 
             "outputSpeech":response.outputSpeech ? response.outputSpeech.ssml : '<Output handled automatically via dialog delegation>', 
             "reprompt":response.reprompt ? response.reprompt.outputSpeech.ssml : '<Output handled automatically via dialog delegation>', 
@@ -599,6 +623,58 @@ const LoggingResponseInterceptor = {
     }
 };
 
+const LocalizationRequestInterceptor = {
+    process(handlerInput) {
+      const localizationClient = i18n.use(sprintf).init({
+        lng: handlerInput.requestEnvelope.request.locale,
+        fallbackLng: 'en',
+        overloadTranslationOptionHandler: sprintf.overloadTranslationOptionHandler,
+        resources: languageStrings,
+        returnObjects: true
+      });
+  
+      const attributes = handlerInput.attributesManager.getRequestAttributes();
+      attributes.t = function (...args) {
+        return localizationClient.t(...args);
+      }
+    }
+  }
+  
+const LocalizationRequestInterceptorWithArraySupport = {
+    process(handlerInput) {
+        const localizationClient = i18n.use(sprintf).init({
+            lng: handlerInput.requestEnvelope.request.locale,
+            fallbackLng: 'en',
+            resources: languageStrings
+        });
+  
+        localizationClient.localize = function () {
+            const args = arguments;
+            let values = [];
+  
+            for (var i = 1; i < args.length; i++) {
+                values.push(args[i]);
+            }
+            const value = i18n.t(args[0], {
+                returnObjects: true,
+                postProcess: 'sprintf',
+                sprintf: values
+            });
+  
+            if (Array.isArray(value)) {
+                return value[Math.floor(Math.random() * value.length)];
+            } else {
+                return value;
+            }
+        }
+  
+        const attributes = handlerInput.attributesManager.getRequestAttributes();
+        attributes.t = function (...args) { // pass on arguments to the localizationClient
+            return localizationClient.localize(...args);
+        };
+    },
+};
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -621,6 +697,7 @@ exports.handler = skillBuilder
     .addRequestInterceptors(InitMemoryAttributesRequestInterceptor)
     .addRequestInterceptors(HistoryRequestInterceptor)
     .addRequestInterceptors(LocaleRequestInterceptor)
+    .addRequestInterceptors(LocalizationRequestInterceptor)
     .addRequestInterceptors(LoggingRequestInterceptor)
     .addResponseInterceptors(LoggingResponseInterceptor)
     .addResponseInterceptors(RecordSpeechOutputResponseInterceptor)
