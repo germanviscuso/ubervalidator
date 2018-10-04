@@ -96,7 +96,7 @@ const CancelIntentHandler =  {
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
         const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
-        let say = requestAttributes.t('CANCEL_INTENT') + '. ' + requestAttributes.t('GOODBYE') + ' ';
+        let say = requestAttributes.t('CANCEL_INTENT') + '. ';
 
         if(ENABLE_INTENT_HISTORY_SUPPORT){
             let previousIntent = getPreviousIntent(sessionAttributes);
@@ -104,6 +104,8 @@ const CancelIntentHandler =  {
                 say += requestAttributes.t('PREVIOUS_INTENT_WAS') + ' ' + previousIntent + '. ';
             }
         }
+
+        say += requestAttributes.t('GOODBYE') + '. ';
 
         return responseBuilder
             .speak(say)
@@ -123,7 +125,7 @@ const StopIntentHandler =  {
         let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
         const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
-        let say = requestAttributes.t('STOP_INTENT') + '. ' + requestAttributes.t('GOODBYE') + ' ';
+        let say = requestAttributes.t('STOP_INTENT') + '. ';
 
         if(ENABLE_INTENT_HISTORY_SUPPORT){
             let previousIntent = getPreviousIntent(sessionAttributes);
@@ -131,6 +133,8 @@ const StopIntentHandler =  {
                 say += requestAttributes.t('PREVIOUS_INTENT_WAS') + ' ' + previousIntent + '. ';
             }
         }
+
+        say += requestAttributes.t('GOODBYE') + '. ';
 
         return responseBuilder
             .speak(say)
@@ -247,7 +251,26 @@ const CatchAllIntentHandler = {
             .reprompt(requestAttributes.t('TRY_AGAIN') + ', ' + say)
             .getResponse();
     }
-  }
+}
+
+const DialogueIntentHandler = {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' &&
+            ENABLE_DIALOG_DIRECTIVE_SUPPORT && 
+            request.dialogState && 
+            request.dialogState !== 'COMPLETED';
+    },
+    handle(handlerInput) {
+      const request = handlerInput.requestEnvelope.request;
+      const responseBuilder = handlerInput.responseBuilder;
+      const currentIntent = request.intent; 
+
+      return responseBuilder
+        .addDelegateDirective(currentIntent)
+        .getResponse();
+    }
+}
 
 const ReflectorIntentHandler = {
     canHandle(handlerInput) {
@@ -261,12 +284,6 @@ const ReflectorIntentHandler = {
       const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
 
       const currentIntent = request.intent; 
-
-      if(ENABLE_DIALOG_DIRECTIVE_SUPPORT && request.dialogState && request.dialogState !== 'COMPLETED') { 
-        return handlerInput.responseBuilder
-            .addDelegateDirective(currentIntent)
-            .getResponse();
-      } 
 
       let say = `${currentIntent.name}. `;
       const slotsInRequest = handlerInput.requestEnvelope.request.intent.slots;
@@ -688,7 +705,8 @@ exports.handler = skillBuilder
         HelpIntentHandler, 
         StopIntentHandler, 
         NavigateHomeIntentHandler,
-        FallbackIntentHandler, 
+        FallbackIntentHandler,
+        DialogueIntentHandler,
         ReflectorIntentHandler,
         SessionEndedHandler,
         CatchAllIntentHandler
